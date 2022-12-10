@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="/css/app.css" rel="stylesheet" type="text/css">
+    <link href="/img/Coald.png" rel="shortcut icon" type="image/x-icon">
+    <title>Coald!</title>
+
+    <% if (room != 'NOUL-ERR') { %> <!-- 들어가있는 채널이 있을때 -->
+    <script>
+      const ws = new WebSocket("wss://ws.coaldc.kro.kr")
+
+      function sendMessage() {
+        if(document.getElementById("message").value == '') {
+          return
+        }
+
+        const message = JSON.stringify(['<%= username %>', '<%= email %>', '<%= id %>', document.getElementById("message").value, '<%= room %>'])
+
+        ws.send(message)
+
+        document.getElementById("message").value = ""
+      }
+
+      function receiveMessage(event) {
+        const message = JSON.parse(event.data)
+
+        const room = message[4]
+        
+        if(room != '<%= room %>') {
+          return
+        }
+        
+        const chat = document.createElement("div")
+
+        const msg = document.createElement("div")
+        msg.id = 'msg'
+        msg.className = 'messages'
+
+        const user = document.createElement("div")
+        user.id = 'username'
+        user.className = 'user'
+
+        msg.appendChild(document.createTextNode(message[3]))
+        user.appendChild(document.createTextNode(message[0]))
+
+        chat.appendChild(user)
+        chat.appendChild(msg)
+
+        const chatLog = document.getElementById("chat-log")
+        chatLog.appendChild(chat)
+
+        chatLog.scrollTop = chatLog.scrollHeight
+      }
+
+      ws.onmessage = receiveMessage
+    </script>
+    <% } %>
+  </head>
+  <body>
+    <% if (room == 'NOUL-ERR') { %> <!-- 들어가있는 채팅방이 없을때 -->
+    <div id="menu-bar">
+      <ul class="rooms">
+        <% for (var i=0; i < rooms.length; i++ ) { %>
+        <li class="room"><a href="/rooms/<%= rooms[i][0] %>"><%= rooms[i][1] %></a></li>
+        <% } %>
+        <li class="room add-btn-li">
+          <img id="add-btn" src="/img/plus.png">
+        </li>
+      </ul>
+
+      <div id="add-modal" class="popup">
+        <form action="/add-channel" method="post">
+          Channel Name: <input type="text" name="channel" autocomplete="off" required>
+          <input type="submit" value="Make Channel"> 
+        </form>
+      </div>
+    </div>
+
+    <script>
+      document.getElementById("add-btn").addEventListener('click', (event) => {
+        event.preventDefault()
+        document.getElementById("add-modal").style.display = "block"
+      })
+    </script>
+
+    <% } else { %> <!-- 들어가있는 채팅방이 있을 때 -->
+
+    <div id="menu-bar">
+      <ul class="rooms">
+        <% for (var i=0; i < rooms.length; i++ ) { %>
+        <li class="room"><a href="/rooms/<%= rooms[i][0] %>"><%= rooms[i][1] %></a></li>
+        <% } %>
+        <li class="room add-btn-li">
+          <img id="add-btn" src="/img/plus.png">
+        </li>
+        <li class="room">
+          <button onclick="document.getElementById('invite-user').style.display = 'block'">Invite User</button>
+        </li>
+      </ul>
+
+      <div id="add-modal" class="popup">
+        <form action="/add-channel" method="post">
+          Channel Name: <input type="text" name="channel" autocomplete="off" required>
+          <input type="submit" value="Make Channel"> 
+        </form>
+      </div>
+
+      <div id="invite-user" class="popup">
+        <form action="/invite-user" method="post">
+          <input type="hidden" name="channel_id" value="<%= room[0] %>">
+          <input type="hidden" name="channel_name" value="<%= room[1] %>">
+          User Email: <input type="email" name="email" autocomplete="off" required>
+          <input type="submit" value="Invite User"> 
+        </form>
+      </div>
+    </div>
+    
+    <div id="chatting">
+      <div id="chat-log"></div>
+    
+
+      <div id="msg-input-box">
+        <span style="color: white;"><%= username %>: </span>
+        <input type="text" id="message" placeholder="Press 'Enter' to send message" style="width: 200px" autofocus/>
+        <button onclick="sendMessage()" id="msg-send-btn">전송</button>
+      </div>
+    </div>
+
+    <script> 
+      document.getElementById("add-btn").addEventListener('click', (event) => {
+        event.preventDefault()
+        document.getElementById("add-modal").style.display = "block"
+      })
+
+      const msg = document.getElementById("message")
+      msg.addEventListener("keyup", (event) => {
+        if(event.keyCode == 13) {
+          event.preventDefault()
+          sendMessage()
+        }
+      })
+    </script>
+    <% } %>
+  </body>
+</html>
