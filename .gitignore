@@ -1,0 +1,7 @@
+sessions/
+.replit
+replit.nix
+.upm
+node_modules/
+package.json
+package-lock.json
